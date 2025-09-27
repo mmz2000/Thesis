@@ -1,0 +1,173 @@
+\documentclass{beamer}
+
+\title{Social Intelligence in Computer Vision: A Review of Cues, Models, and Applications}
+\author{Mohmmad M. Zare'i}
+\institute{University of Tehran}
+\date{\today}
+
+\begin{document}
+\frame{\titlepage}
+\begin{frame}
+    \frametitle{Outline}
+    \tableofcontents
+\end{frame}
+
+
+\section{Introduction}
+\begin{frame}
+    \frametitle{Introduction}
+    \begin{itemize}
+        \item \textbf{Activity Recognition (Individual)} Identifying what a person is doing.
+              Datasets: UCF101, Kinetics
+
+
+        \item \textbf{Group Activity Recognition (Social)} Understanding coordinated or interacting actions within groups.
+              Datasets: Collective Activity, Volleyball Dataset
+
+
+        \item \textbf{Why It Matters}
+              \begin{itemize}
+                  \item Moves beyond visual labels $\rightarrow$ requires reasoning about \textit{roles, relationships, intentions}.
+                  \item Foundation for social intelligence in computer vision.
+                  \item Applications: autonomous driving, social robotics, surveillance, human–AI collaboration.
+              \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\subsection{Complexity of Group Activities}
+\begin{frame}{Complexity Beyond Actions}
+    \begin{itemize}
+        \item Group activities involve \textbf{multiple people} and their interactions.
+        \item Requires modeling of:
+              \begin{itemize}
+                  \item \textit{Roles} (leader, follower, bystander)
+                  \item \textit{Relationships} (friend, rival, teammate)
+                  \item \textit{Intentions} (cooperation, competition, avoidance)
+                  \item \textit{Context} (sports field, meeting room, street)
+              \end{itemize}
+        \item Moves beyond simple action recognition $\rightarrow$ toward \textbf{social reasoning}.
+    \end{itemize}
+\end{frame}
+
+\subsection{Social and Cognitive Cues}
+\begin{frame}{Social and Cognitive Cues}
+    \begin{itemize}
+        \item Key cues from \textbf{social psychology} and \textbf{cognitive science}:
+              \begin{itemize}
+                  \item Facial expressions $\rightarrow$ emotions
+                  \item Body language $\rightarrow$ posture, gestures
+                  \item Gaze direction $\rightarrow$ attention, focus
+                  \item Proxemics $\rightarrow$ distance and spatial relationships
+                  \item Turn-taking $\rightarrow$ conversational dynamics
+              \end{itemize}
+        \item These cues provide the foundation for \textbf{interpreting group interactions}.
+    \end{itemize}
+\end{frame}
+
+\subsection{Technical Challenges}
+\begin{frame}{Technical Challenges}
+    \begin{itemize}
+        \item Multi-person detection and tracking across frames.
+        \item Temporal reasoning: modeling interactions over time.
+        \item Multimodal integration: vision + audio + language.
+        \item Ambiguity and context dependence of group behaviors.
+        \item Generalization: handling unseen group dynamics.
+    \end{itemize}
+\end{frame}
+
+\subsection{From Recognition to Understanding}
+\begin{frame}{From Recognition to Understanding}
+    \begin{itemize}
+        \item Traditional goal: \textbf{recognize what is happening}.
+        \item Emerging goal: \textbf{understand why it is happening}.
+              \begin{itemize}
+                  \item Infer group goals, intentions, and social context.
+                  \item Connect low-level cues with high-level reasoning.
+              \end{itemize}
+        \item This leap is the essence of \textbf{social intelligence in video}.
+    \end{itemize}
+\end{frame}
+
+\section{Literature Review}
+\begin{frame}
+    \frametitle{Literature Review}
+    \begin{itemize}
+        \item Overview of key works in social intelligence and computer vision.
+        \item Discussion of methodologies, datasets, and findings.
+        \item Identification of gaps and future directions.
+    \end{itemize}
+\end{frame}
+
+\subsection{SoGAR: Self-supervised Spatiotemporal Attention-based Social Group Activity Recognition}
+\begin{frame}
+    \frametitle{SoGAR: Self-supervised Spatiotemporal Attention-based Social Group Activity Recognition}
+    \begin{itemize}
+        \item \textbf{Datasets}: Volleyball Dataset, JRDB-PAR, NBA Dataset
+        \item \textbf{Key Contributions}:
+              \begin{itemize}
+                  \item Introduced a self-supervised learning framework.
+                  \item Leveraged spatiotemporal attention for improved interaction modeling.
+                  \item Demonstrated effectiveness on multiple group activity datasets.
+              \end{itemize}
+        \item \textbf{Model Architecture}:
+              \begin{itemize}
+                  \item Base: Vision Transformer (ViT) and TimeSformer
+                  \item Learning: Self-supervised pretraining on large video datasets
+              \end{itemize}
+              % Vision Transformer + TimeSformer
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{SoGAR}
+    \begin{itemize}
+        \item \textbf{Methodology}:
+        \item Uses a self-supervised transformer framework (Vision Transformer backbone) for social group activity recognition.
+        \item Key idea: generate \textbf{local} and \textbf{global} spatio-temporal views from the same video, with variation in frame rate and spatial crop size.
+        \item A teacher-student architecture: teacher processes global view, student processes local views. The student is trained to align its features to those of the teacher.
+        \item Two contrastive / correspondence objectives:
+              \begin{itemize}
+                  \item Temporal Collaborative Learning (TCL): relate views differing in temporal resolution.
+                  \item Spatio-temporal Cooperative Learning (SCL): relate views that differ in spatial crop + temporal sampling.
+              \end{itemize}
+        \item Does \textbf{not} require actor bounding boxes or individual action labels during pre-training, reducing annotation burden.
+        \item Uses motion as supervisory signal from RGB alone; the model becomes invariant to scale, viewpoint, and motion speed.
+
+    \end{itemize}
+\end{frame}
+
+\subsection{LaIAR: Language-Model-Guided Interpretable Video Action Reasoning}
+\begin{frame}
+    \frametitle{LaIAR: Language-Model-Guided Interpretable Video Action Reasoning}
+    \begin{itemize}
+        \item \textbf{Datasets}: Charades, CAD-120
+        \item \textbf{Key Contributions}:
+              \begin{itemize}
+                  \item Proposed a framework that integrates large language models (LLMs) for interpretable action reasoning. Utilizing knowledge transfer between LLMs and video model.
+                  \item Utilized LLMs to generate explanations and rationales for recognized actions. Inferring high-level actions from low-level changes in relationships between actors and objects.
+              \end{itemize}
+        \item \textbf{Model Architecture}:
+              \begin{itemize}
+                  \item R-CNN and ResNet-101 as backbones for object, category, and relation detection.
+                  \item Relations and visual features are mapped to a joint embedding space.
+                  \item Embeddings are fed into a dynamic token transformer (DT-Former).
+              \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{LaIAR}
+    \begin{itemize}
+        \item \textbf{Methodology}:
+        \item Introduces a dual-branch framework: a video model and a language model, trained together so the video model learns reasoning from the language model.
+        \item Uses relationship transitions between humans/objects as cues: visual relations (appearance, bounding boxes, spatial configuration) and semantic relations (human/object categories + relationships) are encoded.
+        \item Both visual and semantic relations are encoded via Faster R-CNN + ResNet-101 for detecting entities, extracting features, forming human-object pairs.
+        \item Core architecture: DT-Former (Dynamic Token Transformer) which applies adaptive token selection (spatio-temporal tokens) and then transformer layers to model relation transitions. Tokens with low importance are discarded via a Gumbel-Softmax mechanism.
+        \item Learning scheme includes:
+              \begin{itemize}
+                  \item Joint visual-semantic embedding: aligning visual relation features and semantic relation features into a common space.
+                  \item Token selection supervision: encourage video branch to select similar important relations as the language branch.
+                  \item Cross-modal learning: video model tries to mimic both classification outputs and relational reasoning patterns of the language model.
+              \end{itemize}
+        \item Interpretability built-in: at inference time only video model is used, but it produces evidence (which relations it focused on; transitions between relationships) that can be mapped to semantic labels.
+    \end{itemize}
+\end{frame}
+\end{document}

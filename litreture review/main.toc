@@ -1,0 +1,8 @@
+\beamer@sectionintoc {1}{Introduction}{3}{0}{1}
+\beamer@subsectionintoc {1}{1}{Complexity of Group Activities}{4}{0}{1}
+\beamer@subsectionintoc {1}{2}{Social and Cognitive Cues}{5}{0}{1}
+\beamer@subsectionintoc {1}{3}{Technical Challenges}{6}{0}{1}
+\beamer@subsectionintoc {1}{4}{From Recognition to Understanding}{7}{0}{1}
+\beamer@sectionintoc {2}{Literature Review}{8}{0}{2}
+\beamer@subsectionintoc {2}{1}{SoGAR: Self-supervised Spatiotemporal Attention-based Social Group Activity Recognition}{9}{0}{2}
+\beamer@subsectionintoc {2}{2}{LaIAR: Language-Model-Guided Interpretable Video Action Reasoning}{11}{0}{2}
