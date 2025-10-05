@@ -1,0 +1,193 @@
+\documentclass{beamer}
+\usetheme{Madrid}
+\usecolortheme{seahorse}
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{graphicx}
+
+\title{SoGAR: Self-Supervised Spatio-Temporal Attention-Based GAR}
+\author{Mohammadmahdi Zare'i}
+\date{\today}
+
+\begin{document}
+
+\frame{\titlepage}
+
+% ----------------------------
+\section{Introduction}
+% ----------------------------
+
+\begin{frame}{Motivation}
+    \begin{itemize}
+        \item Understanding collective human behavior from video is essential for sports, surveillance, and social scene analysis.
+        \item Traditional methods rely on supervised labels; SoGAR introduces a \textbf{self-supervised} learning approach.
+        \item It learns from unlabeled video by aligning local and global temporal representations.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{SoGAR Overview}
+    \begin{itemize}
+        \item \textbf{Goal:} Learn spatio-temporal video representations without labels.
+        \item \textbf{Architecture:} ViT-Base backbone with divided space-time attention.
+        \item \textbf{Training:} Teacher-student EMA setup with TCL and SCL losses.
+        \item \textbf{Outcome:} A pretrained model transferable to labeled group activity datasets.
+    \end{itemize}
+\end{frame}
+
+% % ----------------------------
+% \section{Architecture}
+% % ----------------------------
+
+\begin{frame}{Input Sampling}
+    \begin{itemize}
+        \item Global view: $K_g$ frames, high resolution (480x480).
+        \item Local views: multiple $K_l$-frame clips (e.g., 2--16), low resolution (96x96).
+        \item Bounding boxes guide local crops when available.
+        \item $q=16$ local views per video for self-supervised comparison.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Patch Embedding}
+    \begin{itemize}
+        \item Each frame is divided into $16\times16$ patches.
+        \item Linear projection maps patches to 768-dimensional embeddings.
+        \item A learnable [CLS] token represents the entire clip.
+    \end{itemize}
+    \begin{math}
+        x_p = W_p \cdot \text{Flatten}(patch), \quad x = [CLS; x_{p1}, \ldots, x_{pN}]
+    \end{math}
+\end{frame}
+
+\begin{frame}{Divided Space--Time Attention Blocks}
+    \begin{itemize}
+        \item 12 Transformer blocks (ViT-Base).
+        \item Each block splits attention into spatial and temporal sub-layers.
+        \item Spatial attention captures within-frame relations.
+        \item Temporal attention models motion and group dynamics.
+    \end{itemize}
+    \begin{align*}
+        x'  & = \text{MHA}*{space}(x) \
+        x'' & = \text{MHA}*{time}(x')
+    \end{align*}
+\end{frame}
+
+\begin{frame}[fragile]{Projection Head}
+    \begin{itemize}
+        \item Two-layer MLP: 768 $\rightarrow$ 4096 $\rightarrow$ 256.
+        \item BatchNorm and ReLU between layers.
+        \item Outputs normalized feature vector $z$.
+    \end{itemize}
+    \begin{lstlisting}[language=Python, basicstyle=\ttfamily\scriptsize]
+    proj = nn.Sequential(
+    nn.Linear(768, 4096),
+    nn.BatchNorm1d(4096),
+    nn.ReLU(),
+    nn.Linear(4096, 256)
+    )
+    z = F.normalize(proj(cls), dim=-1)
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Predictor Head (Student Only)}
+    \begin{itemize}
+        \item Predicts teacher embedding from student projection.
+        \item Two-layer MLP with identical structure to projector.
+        \item Encourages temporal alignment via prediction consistency.
+    \end{itemize}
+    \begin{lstlisting}[language=Python, basicstyle=\ttfamily\scriptsize]
+predictor = nn.Sequential(
+nn.Linear(256, 4096),
+nn.BatchNorm1d(4096),
+nn.ReLU(),
+nn.Linear(4096, 256)
+)
+p_l = predictor(z_l)
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Teacher--Student Setup (EMA Update)}
+    \begin{itemize}
+        \item Teacher shares architecture with student but updated via EMA.
+        \item Prevents collapse and provides a stable learning target.
+    \end{itemize}
+    \begin{math}
+        \theta_t \leftarrow m, \theta_t + (1 - m), \theta_s
+    \end{math}
+    \begin{lstlisting}[language=Python, basicstyle=\ttfamily\scriptsize]
+with torch.no_grad():
+    for pt, ps in zip(teacher.parameters(), student.parameters()):
+        pt.data = pt.data * m + ps.data * (1 - m)
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Temporal Collaborative Learning (TCL) Loss}
+    \begin{itemize}
+        \item Aligns student local prediction $p_l$ with teacher global embedding $z_g$.
+        \item Uses cross-entropy over normalized vectors.
+    \end{itemize}
+    \begin{math}
+        L_{TCL} = - z_g \cdot \log(p_l)
+    \end{math}
+    \begin{lstlisting}[language=Python, basicstyle=\ttfamily\scriptsize]
+loss_tcl = - (z_g.detach() * torch.log_softmax(p_l, dim=-1)).sum(
+    dim=-1).mean()
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Spatio-Temporal Cooperative Learning (SCL) Loss}
+    \begin{itemize}
+        \item Aligns global teacher embedding $z_g$ with all local predictions $p_l^i$.
+        \item Enforces consistency across multiple local views.
+    \end{itemize}
+    \begin{math}
+        L_{SCL} = \frac{1}{q}\sum_{i=1}^q - z_g \cdot \log(p_l^i)
+    \end{math}
+    \begin{lstlisting}[language=Python, basicstyle=\ttfamily\scriptsize]
+loss_scl = sum(
+- (z_g.detach() * torch.log_softmax(p, dim=-1)).sum(dim=-1).mean()
+for p in p_locals
+) / len(p_locals)
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Augmentations and View Sampling}
+    \begin{itemize}
+        \item Color jitter ($p=0.8$), grayscale ($p=0.2$) on all views.
+        \item Gaussian blur ($p=0.1$) and solarization ($p=0.2$) for global views only.
+        \item Encourages invariance to appearance changes.
+    \end{itemize}
+    \begin{lstlisting}[language=Python, basicstyle=\ttfamily\scriptsize]
+transform = Compose([
+ColorJitter(p=0.8),
+RandomGrayscale(p=0.2),
+RandomApply([GaussianBlur()], p=0.1),
+RandomApply([Solarize()], p=0.2)
+])
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Training Pipeline (End-to-End)}
+    \begin{itemize}
+        \item Global view processed by teacher $\rightarrow z_g$.
+        \item Local views processed by student $\rightarrow z_l \rightarrow p_l$.
+        \item Total loss: $L = L_{TCL} + L_{SCL}$.
+        \item Teacher updated via EMA after each step.
+    \end{itemize}
+    \begin{lstlisting}[language=Python, basicstyle=\ttfamily\scriptsize]
+loss = loss_tcl(z_g, p_l) + loss_scl(z_g, p_locals)
+optimizer.zero_grad()
+loss.backward()
+optimizer.step()
+update_ema(student, teacher)
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}{Results and Outcomes}
+    \begin{itemize}
+        \item Self-supervised training achieves strong performance on Volleyball, NBA, and JRDB-PAR datasets.
+        \item Learns rich spatio-temporal representations transferable to multiple downstream tasks.
+        \item Efficient ViT-Base backbone with scalable training via view sampling.
+    \end{itemize}
+\end{frame}
+
+\end{document}

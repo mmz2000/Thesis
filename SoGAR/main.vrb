@@ -1,0 +1,14 @@
+\frametitle{Training Pipeline (End-to-End)}
+\begin{itemize}
+        \item Global view processed by teacher $\rightarrow z_g$.
+        \item Local views processed by student $\rightarrow z_l \rightarrow p_l$.
+        \item Total loss: $L = L_{TCL} + L_{SCL}$.
+        \item Teacher updated via EMA after each step.
+    \end{itemize}
+    \begin{lstlisting}[language=Python, basicstyle=\ttfamily\scriptsize]
+loss = loss_tcl(z_g, p_l) + loss_scl(z_g, p_locals)
+optimizer.zero_grad()
+loss.backward()
+optimizer.step()
+update_ema(student, teacher)
+\end{lstlisting}
